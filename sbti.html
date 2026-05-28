@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SBTI 趣味人格测试</title>
+    <style>
+        *{margin:0;padding:0;box-sizing:border-box;}
+        body{background:#f0f2f5;font-family:"微软雅黑",sans-serif;padding:20px;}
+        .wrap{max-width:750px;margin:0 auto;background:#fff;padding:25px;border-radius:12px;box-shadow:0 2px 10px #ddd;}
+        h1{text-align:center;color:#222;margin-bottom:10px;font-size:24px;}
+        .tip{text-align:center;color:#666;font-size:14px;margin-bottom:25px;padding-bottom:15px;border-bottom:1px solid #eee;}
+        .q-item{margin:20px 0;padding:15px;background:#f8f9fa;border-radius:8px;}
+        .q-title{font-weight:bold;margin-bottom:10px;color:#333;}
+        .opt{padding:8px 10px;margin:6px 0;border-radius:4px;cursor:pointer;transition:0.2s;}
+        .opt:hover{background:#e9f4ff;}
+        .opt.active{background:#409eff;color:#fff;}
+        .btn-area{text-align:center;margin:30px 0;}
+        #submit{padding:10px 30px;font-size:16px;border:none;background:#409eff;color:#fff;border-radius:6px;cursor:pointer;}
+        #submit:disabled{background:#94b8e8;cursor:not-allowed;}
+        .result-box{margin-top:20px;padding:20px;background:#f0f7ff;border-radius:8px;display:none;}
+        .result-title{font-size:20px;font-weight:bold;text-align:center;margin-bottom:15px;color:#2c5282;}
+        .result-desc{line-height:1.8;color:#333;}
+    </style>
+</head>
+<body>
+    <div class="wrap">
+        <h1>SBTI 趣味人格测试</h1>
+        <div class="tip">共20题，请凭第一直觉选择，全部作答后查看结果 | 娱乐测试仅供参考</div>
+
+        <div id="questionBox"></div>
+
+        <div class="btn-area">
+            <button id="submit" disabled>提交查看结果</button>
+        </div>
+
+        <div class="result-box" id="resultBox">
+            <div class="result-title" id="resName"></div>
+            <div class="result-desc" id="resText"></div>
+        </div>
+    </div>
+
+<script>
+// 测试题目 + 对应维度 S/B/T/I
+const questionList = [
+    {
+        title:"1. 周末空闲时，你更倾向于？",
+        opts:[
+            {txt:"A. 出门和朋友聚会逛街", type:"S"},
+            {txt:"B. 宅家追剧打游戏，享受独处", type:"B"},
+            {txt:"C. 提前规划好行程，按计划执行", type:"T"},
+            {txt:"D. 随心所欲，不做任何计划", type:"I"}
+        ]
+    },
+    {
+        title:"2. 和人产生分歧时，你会？",
+        opts:[
+            {txt:"A. 主动沟通，希望达成一致", type:"S"},
+            {txt:"B. 不想争吵，选择回避退让", type:"B"},
+            {txt:"C. 理性分析对错，讲道理", type:"T"},
+            {txt:"D. 跟随情绪，不爽就直接表达", type:"I"}
+        ]
+    },
+    {
+        title:"3. 面对全新任务，你的做法是？",
+        opts:[
+            {txt:"A. 找人结伴，一起完成", type:"S"},
+            {txt:"B. 先观察模仿，慢慢上手", type:"B"},
+            {txt:"C. 梳理步骤，制定方案再做", type:"T"},
+            {txt:"D. 直接动手，边做边调整", type:"I"}
+        ]
+    },
+    {
+        title:"4. 在多人社交场合里，你通常？",
+        opts:[
+            {txt:"A. 活跃气氛，和大家轻松聊天", type:"S"},
+            {txt:"B. 安静待着，只和熟人交流", type:"B"},
+            {txt:"C. 选择性交流，只聊有用话题", type:"T"},
+            {txt:"D. 尽量躲避热闹场合", type:"I"}
+        ]
+    },
+    {
+        title:"5. 做事过程中，你最在意？",
+        opts:[
+            {txt:"A. 他人的看法与评价", type:"S"},
+            {txt:"B. 过程轻松、不劳累", type:"B"},
+            {txt:"C. 最终结果是否达标", type:"T"},
+            {txt:"D. 自己是否开心自在", type:"I"}
+        ]
+    },
+    {
+        title:"6. 朋友陷入困境，你会？",
+        opts:[
+            {txt:"A. 主动上前帮忙出主意", type:"S"},
+            {txt:"B. 默默陪伴，等对方求助", type:"B"},
+            {txt:"C. 理性分析，给出解决方案", type:"T"},
+            {txt:"D. 先安抚对方情绪", type:"I"}
+        ]
+    },
+    {
+        title:"7. 哪种状态最让你难受？",
+        opts:[
+            {txt:"A. 长时间独自工作无人交流", type:"S"},
+            {txt:"B. 环境嘈杂无法静心", type:"B"},
+            {txt:"C. 事情杂乱毫无条理", type:"T"},
+            {txt:"D. 被人催促、时刻紧张", type:"I"}
+        ]
+    },
+    {
+        title:"8. 做重要决定时，你习惯？",
+        opts:[
+            {txt:"A. 参考身边人的意见", type:"S"},
+            {txt:"B. 反复纠结，难以抉择", type:"B"},
+            {txt:"C. 权衡利弊，快速下定论", type:"T"},
+            {txt:"D. 凭直觉和喜好选择", type:"I"}
+        ]
+    },
+    {
+        title:"9. 对于未来生活，你更向往？",
+        opts:[
+            {txt:"A. 融入集体，随大流前行", type:"S"},
+            {txt:"B. 平淡安稳，知足常乐", type:"B"},
+            {txt:"C. 定下目标，稳步奋斗", type:"T"},
+            {txt:"D. 活在当下，不纠结未来", type:"I"}
+        ]
+    },
+    {
+        title:"10. 身边人对你的评价多是？",
+        opts:[
+            {txt:"A. 外向开朗，人缘很好", type:"S"},
+            {txt:"B. 温和安静，脾气随和", type:"B"},
+            {txt:"C. 理性靠谱，做事稳重", type:"T"},
+            {txt:"D. 随性洒脱，不拘小节", type:"I"}
+        ]
+    },
+    {
+        title:"11. 遇到突发意外，你会？",
+        opts:[
+            {txt:"A. 立刻找人商量求助", type:"S"},
+            {txt:"B. 先冷静，慢慢想办法", type:"B"},
+            {txt:"C. 快速梳理并解决问题", type:"T"},
+            {txt:"D. 随机应变，顺其自然", type:"I"}
+        ]
+    },
+    {
+        title:"12. 你更喜欢哪种沟通方式？",
+        opts:[
+            {txt:"A. 面对面聊天，亲切直接", type:"S"},
+            {txt:"B. 文字交流，避免尴尬", type:"B"},
+            {txt:"C. 逻辑清晰，直奔主题", type:"T"},
+            {txt:"D. 轻松闲聊，想到啥说啥", type:"I"}
+        ]
+    },
+    {
+        title:"13. 整理个人物品时，你是？",
+        opts:[
+            {txt:"A. 方便他人一起使用为主", type:"S"},
+            {txt:"B. 整洁舒服即可，不用太严谨", type:"B"},
+            {txt:"C. 分类摆放，井然有序", type:"T"},
+            {txt:"D. 随意放置，能找到就行", type:"I"}
+        ]
+    },
+    {
+        title:"14. 压力大的时候，你会？",
+        opts:[
+            {txt:"A. 找朋友倾诉释放情绪", type:"S"},
+            {txt:"B. 独处安静消化情绪", type:"B"},
+            {txt:"C. 主动解决压力来源", type:"T"},
+            {txt:"D. 先放下烦恼，开心为主", type:"I"}
+        ]
+    },
+    {
+        title:"15. 你最擅长的是？",
+        opts:[
+            {txt:"A. 人际交往、维系关系", type:"S"},
+            {txt:"B. 倾听陪伴、理解他人", type:"B"},
+            {txt:"C. 逻辑思考、处理难题", type:"T"},
+            {txt:"D. 脑洞创意、自由发挥", type:"I"}
+        ]
+    },
+    {
+        title:"16. 学习新技能时，你会？",
+        opts:[
+            {txt:"A. 和同伴一起互相学习", type:"S"},
+            {txt:"B. 慢慢摸索，循序渐进", type:"B"},
+            {txt:"C. 先学理论再动手实践", type:"T"},
+            {txt:"D. 直接上手，边练边学", type:"I"}
+        ]
+    },
+    {
+        title:"17. 面对规则与约束，你的态度？",
+        opts:[
+            {txt:"A. 遵守规则，配合集体", type:"S"},
+            {txt:"B. 不违规，也不刻意死守", type:"B"},
+            {txt:"C. 认同合理规则并执行", type:"T"},
+            {txt:"D. 不喜束缚，灵活变通", type:"I"}
+        ]
+    },
+    {
+        title:"18. 休闲时你更喜欢刷哪类内容？",
+        opts:[
+            {txt:"A. 生活、社交、八卦类", type:"S"},
+            {txt:"B. 治愈、温情、慢节奏内容", type:"B"},
+            {txt:"C. 知识、干货、科普内容", type:"T"},
+            {txt:"D. 搞笑、脑洞、趣味内容", type:"I"}
+        ]
+    },
+    {
+        title:"19. 和朋友约定见面，你会？",
+        opts:[
+            {txt:"A. 提前到场等候", type:"S"},
+            {txt:"B. 准时到达，不早不晚", type:"B"},
+            {txt:"C. 提前规划路线防迟到", type:"T"},
+            {txt:"D. 卡点出门，随性赴约", type:"I"}
+        ]
+    },
+    {
+        title:"20. 你理想的生活状态是？",
+        opts:[
+            {txt:"A. 热闹温馨，亲友常伴", type:"S"},
+            {txt:"B. 安稳宁静，少烦心事", type:"B"},
+            {txt:"C. 充实有序，实现自我", type:"T"},
+            {txt:"D. 自由无拘，随心所欲", type:"I"}
+        ]
+    }
+];
+
+// 人格结果文案
+const resultData = {
+    S:{name:"S型 · 社交达人",desc:"你外向热情，擅长社交，是人群中的气氛担当。重视人际关系，待人友善热心，很容易获得他人好感，走到哪里都能快速融入集体。"},
+    B:{name:"B型 · 温柔内敛",desc:"你性格温和安静，偏爱简单舒适的生活。待人包容有耐心，善于倾听，不爱争抢，相处起来让人觉得放松又安心。"},
+    T:{name:"T型 · 理性实干",desc:"你冷静理智，做事有条理、有规划。注重结果与逻辑，执行力强，遇事沉着靠谱，是大家眼中值得信赖的实干派。"},
+    I:{name:"I型 · 随性自由",desc:"你崇尚自由，讨厌条条框框。遵从内心、活得洒脱乐观，想法灵活有趣，不在意他人眼光，只为取悦自己而活。"}
+};
+
+// 渲染页面
+const qBox = document.getElementById("questionBox");
+const submitBtn = document.getElementById("submit");
+const resultBox = document.getElementById("resultBox");
+const resName = document.getElementById("resName");
+const resText = document.getElementById("resText");
+let userAnswer = new Array(questionList.length).fill(null);
+
+// 渲染所有题目
+function renderQ(){
+    questionList.forEach((item,idx)=>{
+        let qDiv = document.createElement("div");
+        qDiv.className = "q-item";
+        qDiv.innerHTML = `<div class="q-title">${item.title}</div>`;
+        item.opts.forEach(opt=>{
+            let oDiv = document.createElement("div");
+            oDiv.className = "opt";
+            oDiv.innerText = opt.txt;
+            oDiv.dataset.type = opt.type;
+            oDiv.dataset.idx = idx;
+            oDiv.onclick = function(){
+                let i = parseInt(this.dataset.idx);
+                qDiv.querySelectorAll(".opt").forEach(o=>o.classList.remove("active"));
+                this.classList.add("active");
+                userAnswer[i] = this.dataset.type;
+                checkComplete();
+            }
+            qDiv.appendChild(oDiv);
+        })
+        qBox.appendChild(qDiv);
+    })
+}
+
+// 检查是否全部答完
+function checkComplete(){
+    let allDone = userAnswer.every(v=>v!==null);
+    submitBtn.disabled = !allDone;
+}
+
+// 计算结果
+function getResult(){
+    let score = {S:0,B:0,T:0,I:0};
+    userAnswer.forEach(t=>score[t]++);
+    let maxType = "S", maxNum = 0;
+    for(let k in score){
+        if(score[k]>maxNum){
+            maxNum = score[k];
+            maxType = k;
+        }
+    }
+    return maxType;
+}
+
+// 提交按钮
+submitBtn.onclick = function(){
+    let type = getResult();
+    let info = resultData[type];
+    resName.innerText = info.name;
+    resText.innerText = info.desc;
+    resultBox.style.display = "block";
+    resultBox.scrollIntoView({behavior:"smooth"});
+}
+
+// 初始化
+window.onload = renderQ;
+</script>
+</body>
+</html>
